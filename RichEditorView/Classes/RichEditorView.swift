@@ -534,10 +534,27 @@ import UIKit
     /// Called by the UITapGestureRecognizer when the user taps the view.
     /// If we are not already the first responder, focus the editor.
     @objc private func viewWasTapped() {
+        let point = tapRecognizer.location(in: webView)
         if !webView.containsFirstResponder {
-            let point = tapRecognizer.location(in: webView)
             focus(at: point)
         }
+        
+        runJS("""
+            (function() {
+                var elems = document.body.getElementsByTagName("*");
+                for (var i = 0; i < elems.length; i++) {
+                    var elem = elems[i];
+                    if (elem.onclick) {
+                        var rect = elem.getBoundingClientRect();
+                        var xInRect = (\(point.x) >= rect.left) && (\(point.x) <= rect.right);
+                        var yInRect = (\(point.y) >= rect.top) && (\(point.y) <= rect.bottom);
+                        if (xInRect && yInRect) {
+                            RE.customAction(elem.onclick);
+                        }
+                    }
+                }
+            })();
+        """)
     }
 
     override open func becomeFirstResponder() -> Bool {
